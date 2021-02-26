@@ -216,7 +216,30 @@ int main(int argc, char const *argv[]){
     Processes.readyQueue = {P1,P2,P3,P4,P5,P6,P7,P8};
 
     while(Processes.isValid()){
+
+
+        cout << "Current Time: " << Processes.totalTime << "\n" <<endl;
+
+
         Process& curr = Processes.nextProcess();
+
+        cout << "Now running: " << curr.name << "\n" << endl;
+        
+        cout << "------------------------------------------------------------------------\n" << endl;
+
+        cout << "Ready Queue:\tProcess\t\tBurst" << endl;
+
+        if(Processes.readyQueue.size() < 2){
+            cout << "\t\t[empty]" << endl;
+        }
+        for(Process P: Processes.readyQueue){
+            if(P.name != curr.name){
+                cout << "\t\t" << P.name << "\t" << P.currBurst << endl;
+            }
+        }
+
+        cout << "\n------------------------------------------------------------------------\n" << endl;
+
         Processes.order.push_back(curr.name);
         Processes.totalTime += curr.currBurst;
         curr.AT = (Processes.totalTime + curr.currIO);
@@ -229,6 +252,16 @@ int main(int argc, char const *argv[]){
             Processes.completed.push_back(curr);
         }
 
+        cout << "Now in I/O:\tProcess\t\tRemaining I/O time" << endl;
+
+        if(Processes.waitingQueue.size() < 2) {cout << "\t\t[empty]" << endl;}
+        for(Process P: Processes.waitingQueue){
+            if(P.name != curr.name){
+                cout << "\t\t" << P.name << "\t" << P.currIO << endl;
+            }
+        }
+
+
 
         Processes.updateWaiting(lastBurst);
         
@@ -236,7 +269,9 @@ int main(int argc, char const *argv[]){
         if(findP(Processes.completed.begin(), Processes.completed.end(), curr) == Processes.completed.end()){
             Processes.waitingQueue.push_back(curr);
         }
-        cout << curr.name << " UNTIL - " << Processes.totalTime <<endl;
+
+        //cout << curr.name << " UNTIL - " << Processes.totalTime <<endl;
+
         //delete it from either readyQueue or waitingQueue depending on where it came from
 
         if(findP(Processes.readyQueue.begin(), Processes.readyQueue.end(), curr) == Processes.readyQueue.end()){
@@ -244,7 +279,18 @@ int main(int argc, char const *argv[]){
         }else{
             Processes.readyQueue.erase(findP(Processes.readyQueue.begin(), Processes.readyQueue.end(), curr));
         }
-        
+
+        cout << "\n------------------------------------------------------------------------\n" << endl;
+
+        cout << "Completed: \t";
+        if(Processes.completed.empty()){cout << "[empty]\n";}
+        for(Process P: Processes.completed){
+            if(P.name != curr.name){ cout << P.name << "\t";}
+        }
+
+        cout << "\n------------------------------------------------------------------------" << endl;
+        cout << "------------------------------------------------------------------------\n" << endl;
+
     }
 
     
