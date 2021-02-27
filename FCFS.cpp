@@ -254,7 +254,7 @@ int main(int argc, char const *argv[]){
 
         cout << "Now in I/O:\tProcess\t\tRemaining I/O time" << endl;
 
-        if(Processes.waitingQueue.size() < 2) {cout << "\t\t[empty]" << endl;}
+        if(Processes.waitingQueue.size() < 1) {cout << "\t\t[empty]" << endl;}
         for(Process P: Processes.waitingQueue){
             if(P.name != curr.name){
                 cout << "\t\t" << P.name << "\t" << P.currIO << endl;
@@ -292,7 +292,9 @@ int main(int argc, char const *argv[]){
         cout << "------------------------------------------------------------------------\n" << endl;
 
     }
-
+    cout << "Finished\n" << endl;
+    cout << "Total Time:\t";
+    cout << "CPU Utilization:\t" << (Processes.totalTime/Processes.idleTime)/(Processes.totalTime) << "%\n" << endl;
     
 
      return 0;
