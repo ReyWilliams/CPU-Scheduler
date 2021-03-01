@@ -49,17 +49,17 @@ constexpr InputIt findP3(InputIt first, InputIt last, const T& value)
 struct Process{
 
     string name;
-    int currBurst;
-    int currIO;
-    vector<int> bursts;
-    vector<int> iotimes;
-    int RT;
-    int TT;
-    int WT;
-    int AT;
-    bool hasRun;
-    int lastBurstTime;
-    int burstAndIOTotal = 0;
+    int currBurst;      //the current burst
+    int currIO;         //the current io
+    vector<int> bursts; //vector ot brusts
+    vector<int> iotimes;//vector of iotimes
+    int RT;             //response time
+    int TT;             //turnaround time
+    int WT;             //waiting time
+    int AT;             //arrival time
+    bool hasRun;        //bool to check if process has run before
+    int lastBurstTime;  //gets the last burst of the process    
+    int burstAndIOTotal = 0;    //totals the burst and Io times for a process (for TT calc)
 
 
 
@@ -67,13 +67,13 @@ struct Process{
 
         //Set up the bursts and iotimes vector
         int i = 0;
-        for(int n: prcessdata){
-            if(i++%2 == 0){
-                bursts.push_back(n);
-                burstAndIOTotal += n;
+        for(int n: prcessdata){ 
+            if(i++%2 == 0){             //for every other value in process data
+                bursts.push_back(n);    //add value to bursts
+                burstAndIOTotal += n;   //add value to total of bursts and ios
             }else{
-                iotimes.push_back(n);
-                burstAndIOTotal += n;
+                iotimes.push_back(n);   //or add value to iotimes
+                burstAndIOTotal += n;   //add value to total of bursts and ios
             }
         }
         
@@ -99,21 +99,19 @@ struct Process{
 };
 
 struct FCFS{
-    double cpuUTIL;
-    int totalTime;
-    int idleTime;
-    vector<Process> waitingQueue;
-    vector<Process> readyQueue;
-    //vector<string> order;
-    vector<Process> completed;
+    double cpuUTIL;                 //CPU utilization
+    int totalTime;                  //total time (current time)
+    int idleTime;                   //count of how much the processes were idle
+    vector<Process> waitingQueue;   //waiting queue for processes
+    vector<Process> readyQueue;     //ready queue for processes
+    vector<Process> completed;      //completed queue for processes
 
-    //Process currPro;
-    FCFS(){
-        totalTime = 0;
+    FCFS(){ //when a new FCFS algo is started...
+        totalTime = 0;  //set total time and idle time to 0
         idleTime = 0;
     }
 
-    bool isValid(){
+    bool isValid(){ //returns true is there is a process that can run next and also update if CPU is idle
 
         //make sure every Process in readyQueue is valid 
         for(Process p: readyQueue){
@@ -124,86 +122,96 @@ struct FCFS{
         
         //if readyQueue is empty
         if(readyQueue.empty()){
-
+            
+            //and waiting queue is empty
             if(waitingQueue.empty()){
-                return false;
+                return false;       //return false as there no other place to check for processes
             }
-            vector<int> times;
-            for(Process p: waitingQueue){
+
+            vector<int> times;              //make a vector of arrival times
+            for(Process p: waitingQueue){   //for all the vectors in the waiting queue check their arrival time
                 times.push_back(p.AT);
             }
 
+            //sort the arrival times
             sort(times.begin(), times.end());
-
+            
+            //if the current time is less than the arrival time
             if(totalTime < times[0]){
-                idleTime += times[0] - totalTime;
-                totalTime = times[0];
-                // order.push_back("Idle");
+                idleTime += times[0] - totalTime;   //update idle time
+                totalTime = times[0];               //update total time
             }  
-            return true;
+
+            return true;    //return true
 
         }
 
-        return false;
+        return false; //if we get here then return false
     }
 
+    //this is the function to update waiting queue 
     void updateWaiting(int curr){
-
+        
+        //for everyprocess in the waiting queue 
         for(Process& P: waitingQueue){
-            P.currIO -= curr;
+            P.currIO -= curr; //reduce the IO times by the curr IO burst
         }
 
+        //go through the waiting queue
         auto it = waitingQueue.begin();
         while(it != waitingQueue.end()){
-            if(it->currIO <= 0){
-                if(it->iotimes.size()){
-                it->currIO = it->iotimes[0];
-                it->iotimes.erase(it->iotimes.begin());
-                }else{
+            if(it->currIO <= 0){ //if the process completed IO
+                if(it->iotimes.size()){ //if io vector for process is not empty
+                it->currIO = it->iotimes[0]; //currIO is the first io 
+                it->iotimes.erase(it->iotimes.begin()); //erase the io as you just updated io
+                }else{  //if io vector is empty
                     it->currIO = 0;
                 }
-                readyQueue.push_back(*it);
-                it = waitingQueue.erase(findP2(waitingQueue.begin(), waitingQueue.end(), it));
-            }else{
-                ++it;
+                readyQueue.push_back(*it); //push back the process to ready queue
+                it = waitingQueue.erase(findP2(waitingQueue.begin(), waitingQueue.end(), it)); //erase it from waiting queue
+            }else{ //if the process is not valid to be put back (not done with IO) 
+                ++it; //increment the iterator
             }
         }
     }
 
+    //This is the function to return what process should go next
     Process& nextProcess(){
         vector<int> times;
 
         //If readyQueue is not empty
         if(!readyQueue.empty()){
-            for(Process p: readyQueue){
+            for(Process p: readyQueue){ //push back all the arrival times in the RQ
                 times.push_back(p.AT);
             }
-
+            
+            //sort them
             sort(times.begin(), times.end());
 
+
+            //if the current time is less than the arrival time
             if(totalTime < times[0]){
-                idleTime = times[0] - totalTime;
-                totalTime = times[0];
-                // order.push_back("Idle");
+                idleTime += times[0] - totalTime;   //update idle time
+                totalTime = times[0];               //update total time
             }
             
-            if(readyQueue.size() > 1){
-                if(readyQueue[0].AT != 0 && readyQueue[1].AT != 0){
-                    if(readyQueue[0].AT == readyQueue[1].AT){
-                        return readyQueue[1];
-                    }
+
+            //sort the RQ processes by name (P1,P2,...)
+            std::sort(readyQueue.begin(), readyQueue.end(),
+                [](const Process &l, const Process &r) {
+                    return l.name < r.name;
+            });
+
+            //pick the first process with the lowest AT
+            for(int i = 0; i < readyQueue.size(); i++){
+                if(readyQueue.at(i).AT == times[0]){
+                    return readyQueue.at(i);
                 }
             }
-
-        for(int i = 0; i < readyQueue.size(); i++){
-            if(readyQueue.at(i).AT == times[0]){
-                return readyQueue.at(i);
-            }
-        }
             
-
+            //if we somehow get here return the first process
             return readyQueue.at(0);
-    }else{ //if ready queue is empty, go to waiting queue
+    }else{ //if ready queue is empty, go to waiting queue and do the same thing
         for(Process p: waitingQueue){
                 times.push_back(p.AT);
             }
@@ -213,22 +221,19 @@ struct FCFS{
             if(totalTime < times[0]){
                 idleTime = times[0] - totalTime;
                 totalTime = times[0];
-                // order.push_back("Idle");
-            }
-            
-            if(waitingQueue.size() > 1){
-                if(waitingQueue[0].AT != 0 && waitingQueue[1].AT != 0){
-                    if(waitingQueue[0].AT == waitingQueue[1].AT){
-                        return waitingQueue[1];
-                    }
-                }
             }
 
-        for(int i = 0; i < waitingQueue.size(); i++){
-            if(waitingQueue.at(i).AT == times[0]){
-                return waitingQueue.at(i);
+             //sort the WQ processes by name (P1,P2,...)
+            std::sort(waitingQueue.begin(), waitingQueue.end(),
+                [](const Process &l, const Process &r) {
+                    return l.name < r.name;
+            });
+
+            for(int i = 0; i < waitingQueue.size(); i++){
+                if(waitingQueue.at(i).AT == times[0]){
+                    return waitingQueue.at(i);
+                }
             }
-        }
             
 
             return waitingQueue.at(0);
@@ -239,7 +244,7 @@ struct FCFS{
 
 int main(int argc, char const *argv[]){
 
-    //Set up the processes
+    //Set up the processes with process data (CPU,IO,CPU,IO,....)
     Process P1("P1",{6, 21, 9, 28, 5, 26, 4, 22, 3, 41, 6, 45, 4, 27, 8 , 27, 3});
     Process P2("P2",{ 19, 48, 16, 32, 17, 29, 6, 44, 8, 34, 21, 34, 19, 39, 10, 31, 7 });
     Process P3("P3",{ 12, 14, 6, 21, 3, 29, 7, 45, 8, 54, 11, 44, 9 });
@@ -249,10 +254,13 @@ int main(int argc, char const *argv[]){
     Process P7("P7",{ 3, 44, 7, 24, 6, 34, 5, 54, 4, 24, 7, 44, 6, 54, 5, 21, 6, 43, 4 });
     Process P8("P8",{ 15, 50, 4, 23, 11, 31, 4, 31, 3, 47, 5, 21, 8, 31, 6, 44, 9});
 
-    FCFS Processes;
+    //Create a new FCFS algo
+    FCFS Processes; 
+
+    //Setup the readyQueue with processes.
     Processes.readyQueue = {P1,P2,P3,P4,P5,P6,P7,P8};
 
-    while(Processes.isValid()){
+    while(Processes.isValid()){ //While the algorithm is valid
 
 
         cout << "Current Time: " << Processes.totalTime << "\n" <<endl;
@@ -321,7 +329,6 @@ int main(int argc, char const *argv[]){
             Processes.waitingQueue.push_back(curr);
         }
 
-        //cout << curr.name << " UNTIL - " << Processes.totalTime <<endl;
 
         //delete it from either readyQueue or waitingQueue depending on where it came from
 
@@ -346,7 +353,7 @@ int main(int argc, char const *argv[]){
     /*******************************************************************************************************************************************/
     //Here we are printing calculatiosn
 
-    // sort(Processes.completed.begin(), Processes.completed.end(), compareProcess);
+
 
     cout << "Finished\n" << endl;
     cout << "Total Time:\t\t";
@@ -376,7 +383,7 @@ int main(int argc, char const *argv[]){
     cout << "Turnaround Times\tP1\tP2\tP3\tP4\tP5\tP6\tP7\tP8" << endl;
     cout << "\t\t\t";
     double turnTotal = 0;
-    for(Process P: Processes.completed){
+    for(Process& P: Processes.completed){
         P.TT = (P.lastBurstTime-P.RT);
         turnTotal += (P.TT);
         cout << P.TT << "\t";
