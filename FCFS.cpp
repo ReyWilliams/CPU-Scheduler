@@ -5,6 +5,8 @@
 #include <algorithm>
 using namespace std;
 
+//These are find functions to locate a process in a vector
+//This one value is the process
 template<class InputIt, class T>
 constexpr InputIt findP(InputIt first, InputIt last, const T& value)
 {
@@ -16,6 +18,7 @@ constexpr InputIt findP(InputIt first, InputIt last, const T& value)
     return last;
 }
 
+//This one value is also the process
 template<class InputIt, class T>
 constexpr InputIt findP2(InputIt first, InputIt last, const T& value)
 {
@@ -26,6 +29,21 @@ constexpr InputIt findP2(InputIt first, InputIt last, const T& value)
     }
     return last;
 }
+
+//This one value is the process' name
+template<class InputIt, class T>
+constexpr InputIt findP3(InputIt first, InputIt last, const T& value)
+{
+    for (; first != last; ++first) {
+        if (first->name == value) {
+            return first;
+        }
+    }
+    return last;
+}
+
+
+
 
 
 struct Process{
@@ -39,23 +57,42 @@ struct Process{
     int TT;
     int WT;
     int AT;
+    bool hasRun;
+    int lastBurstTime;
+    int burstAndIOTotal = 0;
+
 
 
     Process(string name, vector<int> prcessdata){
+
+        //Set up the bursts and iotimes vector
         int i = 0;
         for(int n: prcessdata){
             if(i++%2 == 0){
                 bursts.push_back(n);
+                burstAndIOTotal += n;
             }else{
                 iotimes.push_back(n);
+                burstAndIOTotal += n;
             }
         }
-
+        
+        //Initialize the name
         this->name = name;
 
+        //initialize prcoess data
         RT = 0, WT = 0, TT = 0, AT = 0;
+        hasRun = false;
+
+        //set the first burst and IO to the first in each vector
         currBurst = bursts[0];
         currIO = iotimes[0];
+
+
+
+
+
+        //get rid of the first io as it is now used
         iotimes.erase(iotimes.begin());
     }
 
@@ -67,7 +104,7 @@ struct FCFS{
     int idleTime;
     vector<Process> waitingQueue;
     vector<Process> readyQueue;
-    vector<string> order;
+    //vector<string> order;
     vector<Process> completed;
 
     //Process currPro;
@@ -101,7 +138,7 @@ struct FCFS{
             if(totalTime < times[0]){
                 idleTime += times[0] - totalTime;
                 totalTime = times[0];
-                order.push_back("Idle");
+                // order.push_back("Idle");
             }  
             return true;
 
@@ -147,7 +184,7 @@ struct FCFS{
             if(totalTime < times[0]){
                 idleTime = times[0] - totalTime;
                 totalTime = times[0];
-                order.push_back("Idle");
+                // order.push_back("Idle");
             }
             
             if(readyQueue.size() > 1){
@@ -176,7 +213,7 @@ struct FCFS{
             if(totalTime < times[0]){
                 idleTime = times[0] - totalTime;
                 totalTime = times[0];
-                order.push_back("Idle");
+                // order.push_back("Idle");
             }
             
             if(waitingQueue.size() > 1){
@@ -240,16 +277,30 @@ int main(int argc, char const *argv[]){
 
         cout << "\n------------------------------------------------------------------------\n" << endl;
 
-        Processes.order.push_back(curr.name);
+        // Processes.order.push_back(curr.name);
+
+        //get responseTime
+        if(!curr.hasRun){
+            curr.RT = Processes.totalTime;
+        }
+
         Processes.totalTime += curr.currBurst;
         curr.AT = (Processes.totalTime + curr.currIO);
         int lastBurst = curr.currBurst;
+        
 
-         if(curr.bursts.size() > 1){
+
+        //update the process' burst
+         if(curr.bursts.size() > 1){ //if there are 2 or more bursts
             curr.bursts.erase(curr.bursts.begin());
             curr.currBurst = curr.bursts[0];
-        }else{
-            Processes.completed.push_back(curr);
+            curr.hasRun = true;
+        }else{ //if there is 1 or 0 bursts 
+            curr.lastBurstTime = Processes.totalTime;
+
+            //if the process is not already in the completed queue
+            if(findP(Processes.completed.begin(), Processes.completed.end(), curr) == Processes.completed.end()) 
+                Processes.completed.push_back(curr); 
         }
 
         cout << "Now in I/O:\tProcess\t\tRemaining I/O time" << endl;
@@ -292,10 +343,57 @@ int main(int argc, char const *argv[]){
         cout << "------------------------------------------------------------------------\n" << endl;
 
     }
+    /*******************************************************************************************************************************************/
+    //Here we are printing calculatiosn
+
+    // sort(Processes.completed.begin(), Processes.completed.end(), compareProcess);
+
     cout << "Finished\n" << endl;
-    cout << "Total Time:\t";
-    cout << "CPU Utilization:\t" << (Processes.totalTime/Processes.idleTime)/(Processes.totalTime) << "%\n" << endl;
+    cout << "Total Time:\t\t";
+    cout << Processes.totalTime << endl;
+    cout << "CPU Utilization:\t" << (static_cast<double>(Processes.totalTime-Processes.idleTime)/(Processes.totalTime))*100 << "%\n\n" << endl;
     
+    //sort the processes by name (P1,P2,...)
+    std::sort(Processes.completed.begin(), Processes.completed.end(),
+        [](const Process &l, const Process &r) {
+            return l.name < r.name;
+    });
+
+    //Print waiting times
+    cout << "Waiting Times\t\tP1\tP2\tP3\tP4\tP5\tP6\tP7\tP8" << endl;
+    cout << "\t\t\t";
+    double waitTotal = 0;
+    for(Process P: Processes.completed){
+        int value = ((P.lastBurstTime-P.RT) - P.burstAndIOTotal);
+        waitTotal += (value);
+        cout << value << "\t";
+    }
+    cout << "\nAverage Waiting:\t";
+    cout << waitTotal/8 << "\n" << endl;
+
+
+    //Print Turnaround Times
+    cout << "Turnaround Times\tP1\tP2\tP3\tP4\tP5\tP6\tP7\tP8" << endl;
+    cout << "\t\t\t";
+    double turnTotal = 0;
+    for(Process P: Processes.completed){
+        P.TT = (P.lastBurstTime-P.RT);
+        turnTotal += (P.TT);
+        cout << P.TT << "\t";
+    }
+    cout << "\nAverage Turnaround:\t";
+    cout << turnTotal/8 << "\n" << endl;
+
+    //Print Respone Times
+    cout << "Response Times\t\tP1\tP2\tP3\tP4\tP5\tP6\tP7\tP8" << endl;
+    cout << "\t\t\t";
+    double responseTotal = 0;
+    for(Process P: Processes.completed){
+        responseTotal += P.RT;
+        cout << P.RT << "\t";
+    }
+    cout << "\nAverage Response:\t";
+    cout << responseTotal/8 << endl;
 
      return 0;
 }
